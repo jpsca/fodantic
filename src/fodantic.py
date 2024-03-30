@@ -1,3 +1,7 @@
+"""
+Fodantic
+Copyright (c) Juan-Pablo Scaletti
+"""
 import typing as t
 
 import pydantic
@@ -29,7 +33,8 @@ class BaseForm:
         prefix: str = "",
     ):
         """
-        A form handler that integrates pydantic models for data validation and can interact with ORM models.
+        A form handler that integrates pydantic models for data validation and can
+        interact with ORM models.
 
         This class is designed to be subclassed and should not be instantiated directly.
 
@@ -40,7 +45,8 @@ class BaseForm:
         - obj:
             Optional ORM model instance to fill the form and be updated when saving.
         - prefix:
-            An optional prefix to prepend to field names (separated with a dot). Defaults to an empty string
+            An optional prefix to prepend to field names (separated with a dot).
+            Defaults to an empty string.
 
         ## Attributes:
 
@@ -101,7 +107,6 @@ class BaseForm:
 
         invalid_form.save()
         # ValueError
-
 
         ```
 

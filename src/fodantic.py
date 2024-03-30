@@ -10,7 +10,7 @@ from pydantic.fields import FieldInfo
 from pydantic_core import ErrorDetails
 
 
-__all__ = ["as_form", "Form"]
+__all__ = ["formable", "Form"]
 
 
 class Form:
@@ -22,15 +22,15 @@ class Form:
 
     obj: t.Any = None
     model: BaseModel | None = None
-    model_cls: t.Type[BaseModel]
-    orm_cls: t.Any = None
 
     def __init__(
         self,
         reqdata: t.Any = None,
         *,
+        model_cls: t.Type[BaseModel],
         obj: t.Any = None,
         prefix: str = "",
+        orm_cls: t.Any = None,
     ):
         """
         A form handler that integrates pydantic models for data validation and can
@@ -76,9 +76,9 @@ class Form:
         ## Example:
 
         ```python
-        from fodantic import as_form
+        from fodantic import formable
 
-        @as_form
+        @formable
         class UserForm(pydantic.BaseModel):
             name: str
             age: int
@@ -116,6 +116,9 @@ class Form:
         ```
 
         """
+        self.model_cls = model_cls
+        self.orm_cls = orm_cls
+
         self.prefix = f"{prefix}." if prefix else ""
         self.errors = []
         self.fields = {
@@ -159,13 +162,16 @@ class Form:
                         field.error = error
 
     def __repr__(self) -> str:
+        model_name = self.model_cls.__name__
+        model_form = f"{model_name}.as_form"
+
         if self.is_empty:
-            return f"{self.__class__.__name__}(<empty>)"
+            return f"{model_form}(<empty>)"
 
         if self.is_valid:
-            return repr(self.model)
+            return repr(self.model).replace(model_name, model_form)
         else:
-            return f"{self.__class__.__name__}(<invalid>)"
+            return f"{model_form}(<invalid>)"
 
     @property
     def is_invalid(self):
@@ -369,21 +375,36 @@ class FormField:
         return alias_value if value == [] else value
 
 
-@t.overload
-def as_form(model_cls: t.Type[BaseModel]) -> t.Type[Form]: ...
+class FormableBaseModel(BaseModel):
+    @classmethod
+    def as_form(
+        cls,
+        reqdata: t.Any = None,
+        *,
+        obj: t.Any = None,
+        prefix: str = "",
+    ) -> "Form": ...
+
+
+BM = t.Type[BaseModel]
+FBM = t.Type[FormableBaseModel]
 
 
 @t.overload
-def as_form(*, orm: t.Any = None) -> t.Callable[[t.Type[BaseModel]], t.Type[Form]]: ...
+def formable(model_cls: BM) -> FBM: ...
 
 
-def as_form(
-    model_cls: t.Type[BaseModel] | None = None,
+@t.overload
+def formable(*, orm: t.Any = None) -> t.Callable[[BM], FBM]: ...
+
+
+def formable(
+    model_cls: BM | None = None,
     *,
     orm: t.Any = None,
-) -> t.Type[Form] | t.Callable[[t.Type[BaseModel]], t.Type[Form]]:
+) -> FBM | t.Callable[[BM], FBM]:
     """
-    Decorator to add a `get_form` class method to a Pydantic model.
+    Decorator to add a `as_form` class method to a Pydantic model.
     This decorator can be used with or without parenthesis.
 
     Arguments:
@@ -392,18 +413,20 @@ def as_form(
 
     """
 
-    def decorator(cls: t.Type[BaseModel]) -> t.Type[Form]:
-        """The actual decorator logic that return the Form subclass."""
+    def decorator(model_cls: BM) -> FBM:
+        """The actual decorator logic that adds the `as_form` method."""
 
-        return type(
-            cls.__name__,
-            (Form,),
-            {
-                "__doc__": cls.__doc__,
-                "__module__": cls.__module__,
-                "model_cls": cls,
-                "orm_cls": orm,
-            },
-        )
+        def as_form(
+            cls,
+            reqdata: t.Any = None,
+            *,
+            obj: t.Any = None,
+            prefix: str = "",
+        ) -> Form:
+            return Form(reqdata, obj=obj, prefix=prefix, model_cls=cls, orm_cls=orm)
+
+        setattr(model_cls, "as_form", classmethod(as_form))  # noqa
+        model_cls = t.cast(FBM, model_cls)
+        return model_cls
 
     return decorator if model_cls is None else decorator(model_cls)

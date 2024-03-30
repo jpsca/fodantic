@@ -1,0 +1,185 @@
+[build-system]
+requires = ["setuptools"]
+
+
+[project]
+name = "fodantic"
+version = "0.1"
+description = "Pydantic-based HTTP forms"
+authors = [
+  {name = "Juan-Pablo Scaletti", email = "juanpablo@jpscaletti.com"},
+]
+license = { "file" = "MIT-LICENSE" }
+readme = "README.md"
+requires-python = ">=3.10"
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Environment :: Web Environment",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Typing :: Typed",
+]
+dependencies = [
+  "pydantic >= 2.6.0",
+]
+
+
+[project.optional-dependencies]
+dev = [
+  "pyright",
+  "ruff >= 0.2.0",
+]
+test = [
+  "pytest",
+]
+
+
+[project.urls]
+repository = "https://github.com/jpsca/fodantic"
+
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+
+[tool.setuptools.package-data]
+fodantic = [
+  "src/*",
+]
+
+
+[tool.coverage.run]
+branch = true
+
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "TYPE_CHECKING",
+    "def __repr__",
+    "def __str__",
+    "raise AssertionError",
+    "raise NotImplementedError",
+    "if __name__ == .__main__.:"
+]
+
+
+[tool.coverage.html]
+directory = "covreport"
+
+
+[tool.pyright]
+include = ["src"]
+exclude = [
+    "**/__pycache__",
+]
+reportPrivateImportUsage = false
+reportWildcardImportFromLibrary = false
+
+
+[tool.pytest.ini_options]
+addopts = "--doctest-modules"
+
+
+[tool.tox]
+legacy_tox_ini = """
+[tox]
+skipsdist = True
+envlist = py310,py311,py312
+
+[testenv]
+skip_install = true
+commands =
+    pip install -U uv
+    uv pip install requirements-text.txt
+    pytest -x src/fodantic.py test_fodantic.py
+"""
+
+
+[tool.ruff]
+line-length = 90
+indent-width = 4
+target-version = "py311"
+
+exclude = [
+  ".*",
+  "_build",
+  "build",
+  "covreport",
+  "dist",
+]
+include = ["*.py"]
+
+
+[tool.ruff.format]
+# Like Black, use double quotes for strings.
+quote-style = "double"
+
+# Like Black, indent with spaces, rather than tabs.
+indent-style = "space"
+
+# Like Black, respect magic trailing commas.
+skip-magic-trailing-comma = false
+
+# Like Black, automatically detect the appropriate line ending.
+line-ending = "auto"
+
+# Enable auto-formatting of code examples in docstrings. Markdown,
+# reStructuredText code/literal blocks and doctests are all supported.
+#
+# This is currently disabled by default, but it is planned for this
+# to be opt-out in the future.
+docstring-code-format = false
+
+# Set the line length limit used when formatting code snippets in
+# docstrings.
+#
+# This only has an effect when the `docstring-code-format` setting is
+# enabled.
+docstring-code-line-length = "dynamic"
+
+
+[tool.ruff.lint]
+fixable = ["ALL"]
+
+ignore = [
+	# x is too complex
+	"C901",
+	# whitespace before ':'
+	"E203",
+	"E501",
+	# x defined from star imports
+	"F405",
+	# line break before binary operator
+	"W505",
+	"W605",
+]
+select = [
+	# bugbear
+	"B",
+	# mccabe"", comprehensions, commas
+	"C",
+	# pycodestyle errors
+	"E",
+	# pyflakes
+	"F",
+	# logging format
+	"G",
+	# imports
+	"I",
+	# quotes
+	"Q",
+	# pycodestyle warnings
+	"W",
+]
+
+
+[tool.ruff.lint.isort]
+known-first-party = ["fodantic"]
+
+# Use two line after imports.
+lines-after-imports = 2

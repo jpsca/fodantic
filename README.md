@@ -12,22 +12,20 @@ Pydantic-based HTTP forms.
 ## A simple example
 
 ```py
-from fodantic import BaseForm
+from fodantic import formable
 from pydantic import BaseModel
 
-class User(BaseModel):
+@formable
+class UserModel(BaseModel):
     name: str
     friends: list[int]
     active: bool = True
 
-class UserForm(BaseForm):
-    model_cls = User
-
 request_data = Multidict(('name', 'John Doe'), ('friends', '2'), ('friends', '3')}
-form = UserForm(request_data, obj=None)
+form = UserModel.as_form(request_data, obj=None)
 
 print(form)
-#> UserForm(User(name='John Doe', friends=[2, 3], active=False))
+#> UserModel.as_form(name='John Doe', friends=[2, 3], active=False)
 print(form.fields["name"].value)
 #> John Doe
 print(form.fields["name"].error)

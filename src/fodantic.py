@@ -2,55 +2,115 @@
 Fodantic
 Copyright (c) Juan-Pablo Scaletti
 """
+
 import typing as t
 
-import pydantic
+from pydantic import BaseModel, ValidationError
 from pydantic.fields import FieldInfo
 from pydantic_core import ErrorDetails
 
 
-__all__ = ["BaseForm",]
+__all__ = ["formable", "Form"]
 
 
-class BaseForm:
-    model_cls: t.Type[pydantic.BaseModel]
-    orm_cls: t.Any = None
+class FormableBaseModel(BaseModel):
+    @classmethod
+    def get_form(
+        cls,
+        reqdata: t.Any = None,
+        *,
+        obj: t.Any = None,
+        prefix: str = "",
+    ) -> "Form": ...
 
+
+BM = t.Type[BaseModel]
+FBM = t.Type[FormableBaseModel]
+
+
+@t.overload
+def formable(model_cls: BM) -> FBM: ...
+
+
+@t.overload
+def formable(*, orm: t.Any = None) -> t.Callable[[BM], FBM]: ...
+
+
+def formable(
+    model_cls: BM | None = None,
+    *,
+    orm: t.Any = None,
+) -> FBM | t.Callable[[BM], FBM]:
+    """
+    Decorator to add a `get_form` class method to a Pydantic model.
+    This decorator can be used with or without parenthesis.
+
+    Arguments:
+
+    - orm: Optional class of an ORM model
+
+    """
+
+    def decorator(model_cls: BM) -> FBM:
+        """The actual decorator logic that adds the `get_form` method."""
+
+        def get_form(
+            cls,
+            reqdata: t.Any = None,
+            *,
+            obj: t.Any = None,
+            prefix: str = "",
+        ) -> Form:
+            return Form(reqdata, obj=obj, prefix=prefix, model_cls=cls, orm_cls=orm)
+
+        setattr(model_cls, "get_form", classmethod(get_form))  # noqa
+        model_cls = t.cast(FBM, model_cls)
+        return model_cls
+
+    return decorator if model_cls is None else decorator(model_cls)
+
+
+class Form:
     fields: "dict[str, FormField]"
     prefix: str = ""
     is_valid: bool = False
     is_empty: bool = True
     errors: list[ErrorDetails]
 
-    model: pydantic.BaseModel | None = None
     obj: t.Any = None
+    model: BaseModel | None = None
 
     def __init__(
         self,
         reqdata: t.Any = None,
         *,
+        model_cls: BM,
         obj: t.Any = None,
         prefix: str = "",
+        orm_cls: t.Any = None,
     ):
         """
         A form handler that integrates pydantic models for data validation and can
         interact with ORM models.
 
-        This class is designed to be subclassed and should not be instantiated directly.
-
         ## Arguments:
 
         - reqdata:
             Optional request data used for form submission.
+        - model_cls:
+            The pydantic model class for data validation.
         - obj:
             Optional ORM model instance to fill the form and be updated when saving.
         - prefix:
             An optional prefix to prepend to field names (separated with a dot).
             Defaults to an empty string.
+        - orm_cls:
+            The ORM model class for database interaction. If `None`, the `Form.save()`
+            returns a dict when the form is valid.
 
         ## Attributes:
 
-        - model_cls (Type[pydantic.BaseModel]):
+        - model_cls (t.Type[pydantic.BaseModel]):
             The pydantic model class for data validation.
         - orm_cls (Any, optional):
             The ORM model class for database interaction. Defaults to None.
@@ -71,61 +131,54 @@ class BaseForm:
         ## Example:
 
         ```python
+        from fodantic import formable
+
+        @formable
         class UserModel(pydantic.BaseModel):
             name: str
             age: int
             tags: list[str]
 
 
-        class UserForm(BaseForm):
-            model_cls = UserModel
-            orm_cls = None
+        empty_form = UserModel.get_form()
+        valid_form = UserModel.get_form({"name": "joe", "age": 33})
+        invalid_form = UserModel.get_form({"age": "nan"})
 
+        print(empty_form.fields)
+        '''
+        {
+           'name': FormField(name='name', annotation=str, is_required=True),
+           'age': FormField(name='age', annotation=int, is_required=True),
+           'tags': FormField(name='tags', annotation=list[str], is_required=True),
+        }
+        '''
 
-        empty_form = UserForm()
-        valid_form = UserForm({"name": "joe", "age": 33})
-        invalid_form = UserForm({"age": "nan"})
+        print(empty_form.fields["age"].value)
+        #> ''
 
-        empty_form.fields
-        # {
-        #     'name': FormField(name='name', annotation=str, is_required=True),
-        #     'age': FormField(name='age', annotation=int, is_required=True),
-        #     'tags': FormField(name='tags', annotation=list[str], is_required=True),
-        # }
+        print(valid_form.fields["age"].value)
+        #> 33
 
-        empty_form.fields["age"].value
-        # ''
+        print(empty_form.save())
+        #> ValueError
 
-        valid_form.fields["age"].value
-        # 33
+        print(valid_form.save())
+        #> {'name': 'joe', 'age': 3, 'tags': []}
 
-        empty_form.save()
-        # ValueError
-
-        valid_form.save()
-        # {'name': 'joe', 'age': 3, 'tags': []}
-
-        invalid_form.save()
-        # ValueError
+        print(invalid_form.save())
+        #> ValueError
 
         ```
 
         """
-        if type(self) is BaseForm:
-            raise TypeError(
-                "BaseForm is an abstract base class and cannot be instantiated directly."
-            )
-
-        if not self.model_cls:
-            raise ValueError(
-                "Please add a `model_cls` attribute with the pydantic model."
-            )
+        self.model_cls = model_cls
+        self.orm_cls = orm_cls
 
         self.prefix = f"{prefix}." if prefix else ""
         self.errors = []
         self.fields = {
             name: FormField(name=name, info=info, form=self)
-            for name, info in self.model_cls.model_fields.items()
+            for name, info in model_cls.model_fields.items()
         }
 
         if reqdata is None and obj is None:
@@ -150,12 +203,12 @@ class BaseForm:
             data[model_name] = value
 
         try:
-            self.model = self.model_cls(**data)
+            self.model = model_cls(**data)
             self.is_valid = True
-        except pydantic.ValidationError as exc:
+        except ValidationError as exc:
             self.is_valid = False
             for error in exc.errors():
-                loc = error.get("loc")
+                loc = error.get("loc") or []
                 if not loc:
                     self.errors.append(error)
                 for name in loc:
@@ -202,7 +255,7 @@ class DataWrapper:
         This class abstracts away the differences between various request data sources, providing
         a consistent interface for accessing single values or lists of values.
 
-        Arguments:
+        ## Arguments:
 
         - source (Any): The underlying data source.
 
@@ -252,7 +305,7 @@ class DataWrapper:
 
 
 class FormField:
-    def __init__(self, *, name: str, info: FieldInfo, form: BaseForm):
+    def __init__(self, *, name: str, info: FieldInfo, form: Form):
         """
         A form field
 

@@ -7,6 +7,7 @@ lock:
 .PHONY: install
 install: lock
 	uv pip install -r requirements-dev.txt
+	uv pip install -e .
 
 .PHONY: test
 test:
@@ -22,4 +23,4 @@ coverage:
 
 .PHONY: types
 types:
-	pyright src/
+	pyright src/ test_fodantic.py

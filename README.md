@@ -4,7 +4,7 @@
 
 Pydantic-based HTTP forms.
 
-Pydantic is the most widely used data validation library for Python, but it's hard to use it with regular HTTP forms./. until now.
+[Pydantic](https://docs.pydantic.dev) is the most widely used data validation library for Python, but it's hard to use it with regular HTTP forms./. until now.
 
 **Fodantic** allow you to quickly wrap your Pydantic models and use them as forms: with support for multiple values, checkboxes, error handling, and integration with your favorite ORM.
 

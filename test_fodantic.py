@@ -1,24 +1,21 @@
 import pydantic
 import pytest
 
-from fodantic import BaseForm
+from fodantic import formable
 
 
 DEFAULT_AV = 33
 
 
+@formable
 class UserModel(pydantic.BaseModel):
     name: str
     age: int = DEFAULT_AV
     tags: list[str]
 
 
-class UserForm(BaseForm):
-    model_cls = UserModel
-
-
 def test_empty_form():
-    form = UserForm()
+    form = UserModel.get_form()
 
     assert not form.is_valid
     assert not form.errors
@@ -43,11 +40,11 @@ def test_empty_form():
     with pytest.raises(ValueError):
         form.save()
 
-    assert repr(form) == "UserForm(UserModel<empty>)"
+    assert repr(form) == "Form(UserModel<empty>)"
 
 
 def test_invalid_form():
-    form = UserForm({"age": "nan"})
+    form = UserModel.get_form({"age": "nan"})
 
     assert not form.is_valid
     assert not form.errors
@@ -63,11 +60,11 @@ def test_invalid_form():
     with pytest.raises(ValueError):
         form.save()
 
-    assert repr(form) == "UserForm(UserModel<invalid>)"
+    assert repr(form) == "Form(UserModel<invalid>)"
 
 
 def test_valid_form():
-    form = UserForm(
+    form = UserModel.get_form(
         {
             "name": "joe",
             "age": "20",
@@ -88,15 +85,11 @@ def test_valid_form():
     assert form.fields["tags"].error is None
 
     assert form.save() == {"name": "joe", "age": 20, "tags": ["a"]}
-    assert repr(form) == "UserForm(UserModel(name='joe', age=20, tags=['a']))"
+    assert repr(form) == "Form(UserModel(name='joe', age=20, tags=['a']))"
 
 
 def test_missing_list_is_empty_list():
-    form = UserForm(
-        {
-            "name": "joe",
-        }
-    )
+    form = UserModel.get_form({"name": "joe"})
 
     assert form.is_valid
     assert not form.errors
@@ -105,11 +98,11 @@ def test_missing_list_is_empty_list():
     assert form.fields["tags"].error is None
 
     assert form.save() == {"name": "joe", "age": DEFAULT_AV, "tags": []}
-    assert repr(form) == f"UserForm(UserModel(name='joe', age={DEFAULT_AV}, tags=[]))"
+    assert repr(form) == f"Form(UserModel(name='joe', age={DEFAULT_AV}, tags=[]))"
 
 
 def test_default_value():
-    form = UserForm({"name": "joe", "tags": "a"})
+    form = UserModel.get_form({"name": "joe", "tags": "a"})
 
     assert form.is_valid
     assert not form.errors
@@ -117,7 +110,10 @@ def test_default_value():
 
 
 def test_prefix():
-    form = UserForm({"u1.name": "joe", "u1.age": "20", "u1.tags": "a"}, prefix="u1")
+    form = UserModel.get_form(
+        {"u1.name": "joe", "u1.age": "20", "u1.tags": "a"},
+        prefix="u1",
+    )
 
     assert form.is_valid
     assert not form.errors
@@ -132,11 +128,11 @@ def test_prefix():
     assert form.fields["tags"].error is None
 
     assert form.save() == {"name": "joe", "age": 20, "tags": ["a"]}
-    assert repr(form) == "UserForm(UserModel(name='joe', age=20, tags=['a']))"
+    assert repr(form) == "Form(UserModel(name='joe', age=20, tags=['a']))"
 
 
 def test_prefix_with_default():
-    form = UserForm({"u1.name": "joe", "u1.tags": "a"}, prefix="u1")
+    form = UserModel.get_form({"u1.name": "joe", "u1.tags": "a"}, prefix="u1")
 
     assert form.is_valid
     assert not form.errors
@@ -150,7 +146,7 @@ def test_obj_data():
         tags = ["meh", "whatever"]
 
     user = User()
-    form = UserForm(obj=user)
+    form = UserModel.get_form(obj=user)
 
     assert form.is_valid
     assert not form.errors
@@ -175,7 +171,7 @@ def test_obj_updated():
     reqdata = {"name": "updated"}
     user = User()
 
-    form = UserForm(reqdata, obj=user)
+    form = UserModel.get_form(reqdata, obj=user)
 
     assert form.is_valid
     assert not form.errors
@@ -197,7 +193,7 @@ def test_dict_obj_data():
         "tags": ["meh", "whatever"],
     }
 
-    form = UserForm(obj=user)
+    form = UserModel.get_form(obj=user)
 
     assert form.is_valid
     assert not form.errors
@@ -218,7 +214,7 @@ def test_dict_obj_updated():
     user = {"name": "original", "age": 25}
     reqdata = {"name": "updated"}
 
-    form = UserForm(reqdata, obj=user)
+    form = UserModel.get_form(reqdata, obj=user)
 
     assert form.is_valid
     assert not form.errors
@@ -237,14 +233,11 @@ def test_orm():
         def __init__(self, name: str):
             self.name = name
 
-    class Model(pydantic.BaseModel):
+    @formable(orm=User)
+    class MyModel(pydantic.BaseModel):
         name: str
 
-    class Form(BaseForm):
-        model_cls = Model
-        orm_cls = User
-
-    form = Form({"name": "Bobby Tables"})
+    form = MyModel.get_form({"name": "Bobby Tables"})
     user = form.save()
 
     assert isinstance(user, User)
@@ -252,36 +245,32 @@ def test_orm():
 
 
 def test_checkbox():
+    @formable
     class MyModel(pydantic.BaseModel):
         checkbox: bool
 
-    class MyForm(BaseForm):
-        model_cls = MyModel
-
-    form = MyForm({})
+    form = MyModel.get_form({})
     assert form.fields["checkbox"].value is False
     assert {"checkbox": False} == form.save()
 
-    form = MyForm({"checkbox": ""})
+    form = MyModel.get_form({"checkbox": ""})
     assert form.fields["checkbox"].value is True
     assert {"checkbox": True} == form.save()
 
-    form = MyForm({"checkbox": "whatever"})
+    form = MyModel.get_form({"checkbox": "whatever"})
     assert form.fields["checkbox"].value is True
     assert {"checkbox": True} == form.save()
 
 
 def test_checkbox_empty_override_default():
+    @formable
     class MyModel(pydantic.BaseModel):
         checkbox: bool = True
 
-    class MyForm(BaseForm):
-        model_cls = MyModel
-
-    form = MyForm({})
+    form = MyModel.get_form({})
     assert form.fields["checkbox"].value is False
     assert {"checkbox": False} == form.save()
 
-    form = MyForm({}, obj={"checkbox": True})
+    form = MyModel.get_form({}, obj={"checkbox": True})
     assert form.fields["checkbox"].value is False
     assert {"checkbox": False} == form.save()

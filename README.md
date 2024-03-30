@@ -1,12 +1,12 @@
 # Fodantic
 
+<img align="right" height="200" src="fodantic.png">
+
 Pydantic-based HTTP forms.
 
-![Fodantic](fodantic.png)
+Pydantic is the most widely used data validation library for Python, but it's hard to use it with regular HTTP forms./. until now.
 
-Pydantic is the most widely used data validation library for Python, but it's hard to use it with regular HTTP forms.. until now.
-
-Fodantic allow you to quickly wrap your Pydantic models and use them as forms: with support for multiple values, checkboxes, and integration with your favorito ORM.
+**Fodantic** allow you to quickly wrap your Pydantic models and use them as forms: with support for multiple values, checkboxes, error handling, and integration with your favorite ORM.
 
 
 ## A simple example
@@ -23,11 +23,11 @@ class User(BaseModel):
 class UserForm(BaseForm):
     model_cls = User
 
-request_data = {'name': 'John Doe', 'friends': '2'}
-
+request_data = Multidict(('name', 'John Doe'), ('friends', '2'), ('friends', '3')}
 form = UserForm(request_data, obj=None)
+
 print(form)
-#> UserForm(User(name='John Doe', friends=[1], active=False))
+#> UserForm(User(name='John Doe', friends=[2, 3], active=False))
 print(form.fields["name"].value)
 #> John Doe
 print(form.fields["name"].error)

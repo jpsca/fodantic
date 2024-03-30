@@ -10,64 +10,7 @@ from pydantic.fields import FieldInfo
 from pydantic_core import ErrorDetails
 
 
-__all__ = ["formable", "Form"]
-
-
-class FormableBaseModel(BaseModel):
-    @classmethod
-    def get_form(
-        cls,
-        reqdata: t.Any = None,
-        *,
-        obj: t.Any = None,
-        prefix: str = "",
-    ) -> "Form": ...
-
-
-BM = t.Type[BaseModel]
-FBM = t.Type[FormableBaseModel]
-
-
-@t.overload
-def formable(model_cls: BM) -> FBM: ...
-
-
-@t.overload
-def formable(*, orm: t.Any = None) -> t.Callable[[BM], FBM]: ...
-
-
-def formable(
-    model_cls: BM | None = None,
-    *,
-    orm: t.Any = None,
-) -> FBM | t.Callable[[BM], FBM]:
-    """
-    Decorator to add a `get_form` class method to a Pydantic model.
-    This decorator can be used with or without parenthesis.
-
-    Arguments:
-
-    - orm: Optional class of an ORM model
-
-    """
-
-    def decorator(model_cls: BM) -> FBM:
-        """The actual decorator logic that adds the `get_form` method."""
-
-        def get_form(
-            cls,
-            reqdata: t.Any = None,
-            *,
-            obj: t.Any = None,
-            prefix: str = "",
-        ) -> Form:
-            return Form(reqdata, obj=obj, prefix=prefix, model_cls=cls, orm_cls=orm)
-
-        setattr(model_cls, "get_form", classmethod(get_form))  # noqa
-        model_cls = t.cast(FBM, model_cls)
-        return model_cls
-
-    return decorator if model_cls is None else decorator(model_cls)
+__all__ = ["as_form", "Form"]
 
 
 class Form:
@@ -79,15 +22,15 @@ class Form:
 
     obj: t.Any = None
     model: BaseModel | None = None
+    model_cls: t.Type[BaseModel]
+    orm_cls: t.Any = None
 
     def __init__(
         self,
         reqdata: t.Any = None,
         *,
-        model_cls: BM,
         obj: t.Any = None,
         prefix: str = "",
-        orm_cls: t.Any = None,
     ):
         """
         A form handler that integrates pydantic models for data validation and can
@@ -121,6 +64,8 @@ class Form:
             Dictionary mapping field names to FormField instances.
         - is_valid (bool):
             Indicates whether the form data passed validation. Defaults to True.
+        - is_invalid (bool):
+            The opposite to `is_valid`.
         - is_empty (bool):
             If the form was initialized with request or object data
         - errors (list[ErrorDetails]):
@@ -131,18 +76,18 @@ class Form:
         ## Example:
 
         ```python
-        from fodantic import formable
+        from fodantic import as_form
 
-        @formable
-        class UserModel(pydantic.BaseModel):
+        @as_form
+        class UserForm(pydantic.BaseModel):
             name: str
             age: int
             tags: list[str]
 
 
-        empty_form = UserModel.get_form()
-        valid_form = UserModel.get_form({"name": "joe", "age": 33})
-        invalid_form = UserModel.get_form({"age": "nan"})
+        empty_form = UserForm()
+        valid_form = UserForm({"name": "joe", "age": 33})
+        invalid_form = UserForm({"age": "nan"})
 
         print(empty_form.fields)
         '''
@@ -171,14 +116,11 @@ class Form:
         ```
 
         """
-        self.model_cls = model_cls
-        self.orm_cls = orm_cls
-
         self.prefix = f"{prefix}." if prefix else ""
         self.errors = []
         self.fields = {
             name: FormField(name=name, info=info, form=self)
-            for name, info in model_cls.model_fields.items()
+            for name, info in self.model_cls.model_fields.items()
         }
 
         if reqdata is None and obj is None:
@@ -203,7 +145,7 @@ class Form:
             data[model_name] = value
 
         try:
-            self.model = model_cls(**data)
+            self.model = self.model_cls(**data)
             self.is_valid = True
         except ValidationError as exc:
             self.is_valid = False
@@ -218,12 +160,16 @@ class Form:
 
     def __repr__(self) -> str:
         if self.is_empty:
-            return f"{self.__class__.__name__}({self.model_cls.__name__}<empty>)"
+            return f"{self.__class__.__name__}(<empty>)"
 
         if self.is_valid:
-            return f"{self.__class__.__name__}({repr(self.model)})"
+            return repr(self.model)
         else:
-            return f"{self.__class__.__name__}({self.model_cls.__name__}<invalid>)"
+            return f"{self.__class__.__name__}(<invalid>)"
+
+    @property
+    def is_invalid(self):
+        return not self.is_valid
 
     def save(self) -> t.Any:
         if not self.model or not self.is_valid:
@@ -421,3 +367,43 @@ class FormField:
             value, alias_value = alias_value, value
 
         return alias_value if value == [] else value
+
+
+@t.overload
+def as_form(model_cls: t.Type[BaseModel]) -> t.Type[Form]: ...
+
+
+@t.overload
+def as_form(*, orm: t.Any = None) -> t.Callable[[t.Type[BaseModel]], t.Type[Form]]: ...
+
+
+def as_form(
+    model_cls: t.Type[BaseModel] | None = None,
+    *,
+    orm: t.Any = None,
+) -> t.Type[Form] | t.Callable[[t.Type[BaseModel]], t.Type[Form]]:
+    """
+    Decorator to add a `get_form` class method to a Pydantic model.
+    This decorator can be used with or without parenthesis.
+
+    Arguments:
+
+    - orm: Optional class of an ORM model
+
+    """
+
+    def decorator(cls: t.Type[BaseModel]) -> t.Type[Form]:
+        """The actual decorator logic that return the Form subclass."""
+
+        return type(
+            cls.__name__,
+            (Form,),
+            {
+                "__doc__": cls.__doc__,
+                "__module__": cls.__module__,
+                "model_cls": cls,
+                "orm_cls": orm,
+            },
+        )
+
+    return decorator if model_cls is None else decorator(model_cls)

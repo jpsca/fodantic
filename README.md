@@ -1,10 +1,10 @@
 # Fodantic
 
-<img align="right" height="200" src="fodantic.png">
+<img align="right" height="200" src="https://github.com/jpsca/fodantic/blob/1620ae934be26ce1ef2a57aeebfb820e52461305/fodantic.png">
 
 Pydantic-based HTTP forms.
 
-[Pydantic](https://docs.pydantic.dev) is the most widely used data validation library for Python, but it's hard to use it with regular HTTP forms./. until now.
+[Pydantic](https://docs.pydantic.dev) is the most widely used data validation library for Python, but it's hard to use it with regular HTTP forms... until now.
 
 **Fodantic** allow you to quickly wrap your Pydantic models and use them as forms: with support for multiple values, checkboxes, error handling, and integration with your favorite ORM.
 

@@ -2,6 +2,7 @@
 Fodantic
 Copyright (c) 2024 Juan-Pablo Scaletti
 """
+
 import typing as t
 
 from pydantic import BaseModel, ValidationError
@@ -145,8 +146,13 @@ class Form:
             if value is None and obj:
                 value = obj.get(model_name)
             if value is None:
-                value = field.get_default()
+                value = (
+                    field.default_factory() if field.default_factory else field.default
+                )
             data[model_name] = value
+
+        for model_name, value in data.items():
+            self.fields[model_name].value = value
 
         try:
             self.model = self.model_cls(**data)
@@ -198,7 +204,6 @@ class Form:
         if not self.model:
             return None
         return getattr(self.model, name, None)
-
 
 
 class FormableBaseModel(BaseModel):

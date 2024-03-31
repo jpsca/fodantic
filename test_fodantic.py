@@ -27,7 +27,7 @@ def test_empty_form():
     assert form.fields["name"].error is None
 
     assert form.fields["age"].name == "age"
-    assert form.fields["age"].value == ""
+    assert form.fields["age"].value == DEFAULT_AV
     assert form.fields["age"].is_required is False
     assert form.fields["age"].error is None
 
@@ -54,6 +54,7 @@ def test_invalid_form():
 
     assert form.fields["age"].error
     assert form.fields["age"].error["type"] == "int_parsing"
+    assert form.fields["age"].value == "nan"
 
     assert form.fields["tags"].error is None
 
@@ -78,7 +79,7 @@ def test_valid_form():
     assert form.fields["name"].value == "joe"
     assert form.fields["name"].error is None
 
-    assert form.fields["age"].value == 20
+    assert form.fields["age"].value == "20"
     assert form.fields["age"].error is None
 
     assert form.fields["tags"].value == ["a"]
@@ -121,7 +122,7 @@ def test_prefix():
     assert form.fields["name"].value == "joe"
     assert form.fields["name"].error is None
 
-    assert form.fields["age"].value == 20
+    assert form.fields["age"].value == "20"
     assert form.fields["age"].error is None
 
     assert form.fields["tags"].value == ["a"]

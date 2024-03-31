@@ -4,6 +4,8 @@ Copyright (c) 2024 Juan-Pablo Scaletti
 """
 import typing as t
 
+from pydantic_core import PydanticUndefined
+
 
 if t.TYPE_CHECKING:
     from pydantic.fields import FieldInfo
@@ -13,6 +15,11 @@ if t.TYPE_CHECKING:
 
 
 class FormField:
+    model_name: str
+    is_required: bool
+    is_multiple: bool
+    value: str | list[str] | bool
+
     def __init__(self, *, name: str, info: "FieldInfo", form: "Form"):
         """
         A form field
@@ -20,32 +27,35 @@ class FormField:
         ## Attributes:
 
         - model_name:
-            The name used in the pydantic Model (different than the one in the HTML form if
-            a prefix is used).
-        - is_required:
-            Whether the field is required or optional.
+            The name used in the pydantic Model (different than the one in the
+            HTML form if a prefix is used).
+        - name:
+            The name, maybe with a prefix, used in the HTML form.
+        - value:
+            The current (potentially invalid) field value.
         - is_multiple:
             Whether the field expects a list of values instead of just one.
+        - is_required:
+            Whether the field is required or optional.
+
         - annotation:
             The type annotation of the field.
+        - alias:
+            The alias name of the field.
+        - alias_name:
+            The alias, maybe with a prefix, that can be also used in the HTML form.
+        - alias_priority:
+            The priority of the field's alias.
         - default:
             The default value of the field.
         - default_factory:
             The factory function used to construct the default for the field.
-        - alias:
-            The alias name of the field.
-        - alias_priority:
-            The priority of the field's alias.
-        - validation_alias:
-            The validation alias of the field.
-        - serialization_alias:
-            The serialization alias of the field.
-        - title:
-            The title of the field.
         - description:
             The description of the field.
         - examples:
             List of examples of the field.
+        - title:
+            The title of the field.
 
         """
         self._form = form
@@ -56,16 +66,15 @@ class FormField:
         self.is_multiple = self.annotation_origin in (list, tuple)
 
         self.annotation = info.annotation
-        self.default = info.default
-        self.default_factory = info.default_factory
         self.alias = info.alias
         self.alias_priority = info.alias_priority or 2
-        self.validation_alias = info.validation_alias
-        self.serialization_alias = info.serialization_alias
-        self.title = info.title
+        self.default = info.default
+        self.default_factory = info.default_factory
         self.description = info.description
         self.examples = info.examples
+        self.title = info.title
 
+        self.value = self.get_default()
         self.error: "ErrorDetails | None" = None
 
         _str = ", ".join(str(info).replace(" required", " is_required").split(" "))
@@ -84,13 +93,6 @@ class FormField:
             return f"{self._form.prefix}{self.alias}"
         return ""
 
-    @property
-    def value(self) -> t.Any:
-        model_value = self._form._get_model_value(self.model_name)
-        if model_value is None:
-            return [] if self.is_multiple else ""
-        return model_value
-
     def extract_value(self, reqdata: t.Any) -> str | bool | None | list[str]:
         return (
             self._extract_many(reqdata)
@@ -99,9 +101,12 @@ class FormField:
         )
 
     def get_default(self) -> t.Any:
-        if self.default_factory:
-            return self.default_factory()
-        return self.default
+        default = self.default_factory() if self.default_factory else self.default
+        if default == PydanticUndefined:
+            default = None
+        if default is None:
+            default = [] if self.is_multiple else ""
+        return default
 
     # Private
 

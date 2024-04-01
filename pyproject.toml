@@ -4,7 +4,7 @@ requires = ["setuptools"]
 
 [project]
 name = "fodantic"
-version = "0.0.3"
+version = "0.0.4"
 description = "Pydantic-based HTTP forms"
 authors = [
   {name = "Juan-Pablo Scaletti", email = "juanpablo@jpscaletti.com"},

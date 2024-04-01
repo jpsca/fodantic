@@ -4,14 +4,14 @@ import pytest
 from fodantic import formable
 
 
-DEFAULT_AV = 33
+AGE_TEST_VALUE = 33
 
 
 @formable
 class UserModel(pydantic.BaseModel):
     name: str
-    age: int = DEFAULT_AV
-    tags: list[str]
+    age: int = AGE_TEST_VALUE
+    tags: list[str] = pydantic.Field(default_factory=list)
 
 
 def test_empty_form():
@@ -27,14 +27,13 @@ def test_empty_form():
     assert form.fields["name"].error is None
 
     assert form.fields["age"].name == "age"
-    assert form.fields["age"].value == DEFAULT_AV
+    assert form.fields["age"].value == AGE_TEST_VALUE
     assert form.fields["age"].is_required is False
     assert form.fields["age"].error is None
 
     assert form.fields["tags"].name == "tags"
     assert form.fields["tags"].value == []
-
-    assert form.fields["tags"].is_required is True
+    assert form.fields["tags"].is_required is False
     assert form.fields["tags"].error is None
 
     with pytest.raises(ValueError):
@@ -50,7 +49,7 @@ def test_invalid_form():
     assert not form.errors
 
     assert form.fields["name"].error
-    assert form.fields["name"].error["type"] == "string_type"
+    assert form.fields["name"].error["type"] == "missing"
 
     assert form.fields["age"].error
     assert form.fields["age"].error["type"] == "int_parsing"
@@ -98,8 +97,8 @@ def test_missing_list_is_empty_list():
     assert form.fields["tags"].value == []
     assert form.fields["tags"].error is None
 
-    assert form.save() == {"name": "joe", "age": DEFAULT_AV, "tags": []}
-    assert repr(form) == f"UserModel.as_form(name='joe', age={DEFAULT_AV}, tags=[])"
+    assert form.save() == {"name": "joe", "age": AGE_TEST_VALUE, "tags": []}
+    assert repr(form) == f"UserModel.as_form(name='joe', age={AGE_TEST_VALUE}, tags=[])"
 
 
 def test_default_value():
@@ -107,7 +106,7 @@ def test_default_value():
 
     assert form.is_valid
     assert not form.errors
-    assert form.fields["age"].value == DEFAULT_AV
+    assert form.fields["age"].value == AGE_TEST_VALUE
 
 
 def test_prefix():
@@ -137,7 +136,7 @@ def test_prefix_with_default():
 
     assert form.is_valid
     assert not form.errors
-    assert DEFAULT_AV == form.fields["age"].value
+    assert AGE_TEST_VALUE == form.fields["age"].value
 
 
 def test_obj_data():
@@ -147,7 +146,7 @@ def test_obj_data():
         tags = ["meh", "whatever"]
 
     user = User()
-    form = UserModel.as_form(obj=user)
+    form = UserModel.as_form({}, obj=user)
 
     assert form.is_valid
     assert not form.errors
@@ -162,6 +161,31 @@ def test_obj_data():
     assert form.fields["tags"].error is None
 
     assert form.save() == user
+
+
+def test_only_validate_with_reqdata():
+    class User:
+        name = ""
+        age = 55
+        tags = []
+
+    user = User()
+    form = UserModel.as_form(obj=user)
+
+    assert not form.is_valid
+    assert not form.errors
+
+    assert form.fields["name"].value == ""
+    assert form.fields["name"].error is None
+
+    assert form.fields["age"].value == 55
+    assert form.fields["age"].error is None
+
+    assert form.fields["tags"].value == []
+    assert form.fields["tags"].error is None
+
+    with pytest.raises(ValueError):
+        form.save()
 
 
 def test_obj_updated():
@@ -194,7 +218,7 @@ def test_dict_obj_data():
         "tags": ["meh", "whatever"],
     }
 
-    form = UserModel.as_form(obj=user)
+    form = UserModel.as_form({}, obj=user)
 
     assert form.is_valid
     assert not form.errors

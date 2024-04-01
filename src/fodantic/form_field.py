@@ -33,10 +33,12 @@ class FormField:
             The name, maybe with a prefix, used in the HTML form.
         - value:
             The current (potentially invalid) field value.
-        - is_multiple:
-            Whether the field expects a list of values instead of just one.
         - is_required:
             Whether the field is required or optional.
+        - is_multiple:
+            Whether the field expects a list of values instead of just one.
+        - is_bool:
+            Whether the field is of type boolean.
 
         - annotation:
             The type annotation of the field.
@@ -59,11 +61,12 @@ class FormField:
 
         """
         self._form = form
-
         self.model_name = name
         self.is_required = info.is_required()
-        self.annotation_origin = t.get_origin(info.annotation)
-        self.is_multiple = self.annotation_origin in (list, tuple)
+
+        annotation_origin = t.get_origin(info.annotation)
+        self.is_multiple = annotation_origin in (list, tuple)
+        self.is_bool = info.annotation == bool or annotation_origin == bool
 
         self.annotation = info.annotation
         self.alias = info.alias
@@ -93,6 +96,18 @@ class FormField:
             return f"{self._form.prefix}{self.alias}"
         return ""
 
+    def set_value(self, value: t.Any):
+        if self.is_bool:
+            if value is None:
+                self.value = False
+            elif value == "":
+                self.value = True
+            else:
+                self.value = bool(value)
+        if value is None:
+            return
+        self.value = value
+
     def extract_value(self, reqdata: t.Any) -> str | bool | None | list[str]:
         return (
             self._extract_many(reqdata)
@@ -110,7 +125,10 @@ class FormField:
 
     # Private
 
-    def _extract_one(self, reqdata: t.Any) -> str | bool | None:
+    def _extract_one(self, reqdata: t.Any) -> t.Any:
+        if self.is_bool and self.name not in reqdata:
+            return False
+
         value = reqdata.get(self.name)
         alias_value = reqdata.get(self.alias_name)
         if self.alias_priority > 1:
@@ -118,7 +136,7 @@ class FormField:
 
         extracted = alias_value if value is None else value
 
-        if self.annotation == bool or self.annotation_origin == bool:
+        if self.is_bool:
             if extracted is None:
                 return False
             if extracted == "":
@@ -127,7 +145,9 @@ class FormField:
 
         return extracted
 
-    def _extract_many(self, reqdata: t.Any) -> list[str]:
+    def _extract_many(self, reqdata: t.Any) -> list[str] | None:
+        if self.name not in reqdata:
+            return None
         value = reqdata.getall(self.name)
         alias_value = reqdata.getall(self.alias_name)
         if self.alias_priority > 1:

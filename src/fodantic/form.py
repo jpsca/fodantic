@@ -128,32 +128,44 @@ class Form:
             for name, info in self.model_cls.model_fields.items()
         }
 
-        if reqdata is None and obj is None:
+        self.is_empty = reqdata is None and obj is None
+        if self.is_empty:
             return
 
-        self.is_empty = False
-        reqdata = DataWrapper(reqdata) if reqdata is not None else None
+        req_ = DataWrapper(reqdata)
+        obj_ = DataWrapper(obj)
+
         if obj is not None:
-            self.obj = obj = DataWrapper(obj)
+            self.obj = obj_
 
         data: dict[str, t.Any] = {}
 
         for field in self.fields.values():
             model_name = field.model_name
             value: t.Any = None
-            if reqdata:
-                value = field.extract_value(reqdata)
-            if value is None and obj:
-                value = obj.get(model_name)
-            if value is None:
-                value = (
-                    field.default_factory() if field.default_factory else field.default
-                )
-            data[model_name] = value
+
+            value = field.extract_value(req_)
+            if obj and value is None:
+                value = obj_.get(model_name)
+
+            if value is not None:
+                data[model_name] = value
 
         for model_name, value in data.items():
-            self.fields[model_name].value = value
+            self.fields[model_name].set_value(value)
 
+        if reqdata is not None:
+            self.validate(data)
+
+    def validate(self, data: dict[str, t.Any] | None = None):
+        if data is None:
+            data = {
+                model_name: field.value
+                for model_name, field in self.fields.items()
+                if field.value is not None
+            }
+
+        # print(data)
         try:
             self.model = self.model_cls(**data)
             self.is_valid = True
@@ -167,18 +179,6 @@ class Form:
                     field = self.fields.get(str(name))
                     if field:
                         field.error = error
-
-    def __repr__(self) -> str:
-        model_name = self.model_cls.__name__
-        model_form = f"{model_name}.as_form"
-
-        if self.is_empty:
-            return f"{model_form}(<empty>)"
-
-        if self.is_valid:
-            return repr(self.model).replace(model_name, model_form)
-        else:
-            return f"{model_form}(<invalid>)"
 
     @property
     def is_invalid(self):
@@ -197,6 +197,18 @@ class Form:
             return self.orm_cls(**data)
 
         return data
+
+    def __repr__(self) -> str:
+        model_name = self.model_cls.__name__
+        model_form = f"{model_name}.as_form"
+
+        if self.is_empty:
+            return f"{model_form}(<empty>)"
+
+        if self.is_valid:
+            return repr(self.model).replace(model_name, model_form)
+        else:
+            return f"{model_form}(<invalid>)"
 
     # Private
 

@@ -17,12 +17,16 @@ class DataWrapper:
             or a regular dict.
 
         """
-        self.source = source
+        self.source: t.Any = {} if source is None else source
+        self.is_dict = isinstance(source, dict)
         self.get = self._get_get_method()
         self.getall = self._get_getall_method()
 
+    def __contains__(self, __name: str) -> bool:
+        return __name in self.source
+
     def update(self, data: dict[str, t.Any]) -> t.Any:
-        if hasattr(self.source, "update"):
+        if self.is_dict:
             self.source.update(data)
         else:
             for key, value in data.items():
@@ -31,18 +35,18 @@ class DataWrapper:
         return self.source
 
     def _get_get_method(self) -> t.Callable[[str], t.Any]:
-        if self.source and hasattr(self.source, "get"):
+        if self.is_dict:
             return self.source.get
 
         def get_fallback(name: str) -> t.Any:
             if not self.source:
                 return None
-            return getattr(self.source, name)
+            return getattr(self.source, name, None)
 
         return get_fallback
 
     def _get_getall_method(self) -> t.Callable[[str], list[t.Any]]:
-        if self.source:
+        if not self.is_dict:
             # WebOb, Bottle, and Proper uses `getall`
             if hasattr(self.source, "getall"):
                 return self.source.getall

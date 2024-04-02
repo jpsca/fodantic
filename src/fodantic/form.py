@@ -22,7 +22,7 @@ class Form:
     is_empty: bool = True
     errors: list[ErrorDetails]
 
-    object: t.Any = None
+    wobject: t.Any = None
     model: BaseModel | None = None
 
     def __init__(
@@ -132,11 +132,11 @@ class Form:
         if self.is_empty:
             return
 
-        req_ = DataWrapper(reqdata)
-        obj_ = ObjectWrapper(object)
+        wreqdata = DataWrapper(reqdata)
+        wobject = ObjectWrapper(object)
 
         if object is not None:
-            self.object = obj_
+            self.wobject = wobject
 
         data: dict[str, t.Any] = {}
 
@@ -144,9 +144,9 @@ class Form:
             model_name = field.model_name
             value: t.Any = None
 
-            value = field.extract_value(req_)
+            value = field.extract_value(wreqdata)
             if object and (value is None):
-                value = obj_.get(model_name)
+                value = wobject.get(model_name)
 
             if value is not None:
                 data[model_name] = value
@@ -165,7 +165,7 @@ class Form:
                 if field.value is not None
             }
 
-        print(data)
+        # print(data)
         try:
             self.model = self.model_cls(**data)
             self.is_valid = True
@@ -184,14 +184,20 @@ class Form:
     def is_invalid(self):
         return not self.is_valid
 
+    @property
+    def object(self):
+        if self.wobject is None:
+            return None
+        return self.wobject.source
+
     def save(self) -> t.Any:
         if not self.model or not self.is_valid:
             raise ValueError("Form is not valid")
 
         data = self.model.model_dump()
 
-        if self.object is not None:
-            return self.object.update(data)
+        if self.wobject is not None:
+            return self.wobject.update(data)
 
         if self.orm_cls:
             return self.orm_cls(**data)

@@ -11,10 +11,10 @@ class DataWrapper:
         A utility class for wrapping request data and providing a consistent interface
         for updating, accessing single values, or lists of values.
 
-        ## Arguments:
-
-        - source: The underlying data source. Can be a Multidict implementation
-            or a regular dict.
+        Args:
+            source:
+                The underlying data source. Can be a Multidict
+                implementation or a regular dict.
 
         """
         self.source: t.Any = {} if source is None else source
@@ -58,10 +58,10 @@ class ObjectWrapper:
         A utility class for wrapping request data and providing a consistent interface
         for updating, accessing single values, or lists of values.
 
-        ## Arguments:
-
-        - source: The underlying data source. Can be a Multidict implementation
-            or a regular dict.
+        Args:
+            source:
+                The underlying data source. Can be a Multidict
+                implementation or a regular dict.
 
         """
         self.source: t.Any = {} if source is None else source

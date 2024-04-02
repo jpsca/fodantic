@@ -24,40 +24,40 @@ class FormField:
         """
         A form field
 
-        ## Attributes:
+        Attributes:
+            model_name:
+                The name used in the pydantic Model (different than the one in
+                the HTML form if a prefix is used).
+            name:
+                The name, maybe with a prefix, used in the HTML form.
+            value:
+                The current (potentially invalid) field value.
+            is_required:
+                Whether the field is required or optional.
+            is_multiple:
+                Whether the field expects a list of values instead of just one.
+            is_bool:
+                Whether the field is of type boolean.
 
-        - model_name:
-            The name used in the pydantic Model (different than the one in the
-            HTML form if a prefix is used).
-        - name:
-            The name, maybe with a prefix, used in the HTML form.
-        - value:
-            The current (potentially invalid) field value.
-        - is_required:
-            Whether the field is required or optional.
-        - is_multiple:
-            Whether the field expects a list of values instead of just one.
-        - is_bool:
-            Whether the field is of type boolean.
-
-        - annotation:
-            The type annotation of the field.
-        - alias:
-            The alias name of the field.
-        - alias_name:
-            The alias, maybe with a prefix, that can be also used in the HTML form.
-        - alias_priority:
-            The priority of the field's alias.
-        - default:
-            The default value of the field.
-        - default_factory:
-            The factory function used to construct the default for the field.
-        - description:
-            The description of the field.
-        - examples:
-            List of examples of the field.
-        - title:
-            The title of the field.
+            annotation:
+                The type annotation of the field.
+            alias:
+                The alias name of the field.
+            alias_name:
+                The alias, maybe with a prefix, that can be also used in the
+                HTML form.
+            alias_priority:
+                The priority of the field's alias.
+            default:
+                The default value of the field.
+            default_factory:
+                The factory function used to construct the default for the field.
+            description:
+                The description of the field.
+            examples:
+                List of examples of the field.
+            title:
+                The title of the field.
 
         """
         self._form = form

@@ -35,87 +35,87 @@ class Form:
         orm_cls: t.Any = None,
     ):
         """
-        A form handler that integrates pydantic models for data validation and can
-        interact with ORM models.
+        A form handler that integrates pydantic models for data validation
+        and can interact with ORM models.
 
-        ## Arguments:
+        Args:
+            reqdata:
+                Optional request data used for form submission.
+            model_cls:
+                The pydantic model class for data validation.
+            object:
+                Optional ORM model instance to fill the form and be updated
+                when saving.
+            prefix:
+                An optional prefix to prepend to field names (separated with
+                a dot). Defaults to an empty string.
+            orm_cls:
+                The ORM model class for database interaction. If `None`,
+                the `Form.save()` returns a dict when the form is valid.
 
-        - reqdata:
-            Optional request data used for form submission.
-        - model_cls:
-            The pydantic model class for data validation.
-        - object:
-            Optional ORM model instance to fill the form and be updated when saving.
-        - prefix:
-            An optional prefix to prepend to field names (separated with a dot).
-            Defaults to an empty string.
-        - orm_cls:
-            The ORM model class for database interaction. If `None`, the `Form.save()`
-            returns a dict when the form is valid.
+        Attributes:
+            model_cls:
+                The pydantic model class for data validation.
+            orm_cls:
+                The ORM model class for database interaction.
+                Defaults to `None`.
+            prefix:
+                Optional prefix used in form field names.
+                Defaults to an empty string.
+            fields:
+                Dictionary mapping field names to `FormField` instances.
+            is_valid:
+                Indicates whether the form data passed validation.
+                Defaults to True.
+            is_invalid:
+                The opposite to `is_valid`.
+            is_empty:
+                If the form was initialized with request or object data
+            errors:
+                List of validation errors encountered.
+            model:
+                The instantiated pydantic model after validation.
+                Defaults to `None`.
 
-        ## Attributes:
+        Example:
+            ```python
+            from fodantic import formable
 
-        - model_cls (t.Type[pydantic.BaseModel]):
-            The pydantic model class for data validation.
-        - orm_cls (Any, optional):
-            The ORM model class for database interaction. Defaults to None.
-
-        - prefix (str):
-            Optional prefix used in form field names. Defaults to an empty string.
-        - fields (dict[str, FormField]):
-            Dictionary mapping field names to FormField instances.
-        - is_valid (bool):
-            Indicates whether the form data passed validation. Defaults to True.
-        - is_invalid (bool):
-            The opposite to `is_valid`.
-        - is_empty (bool):
-            If the form was initialized with request or object data
-        - errors (list[ErrorDetails]):
-            List of validation errors encountered.
-        - model (pydantic.BaseModel | None):
-            The instantiated pydantic model after validation. Defaults to None.
-
-        ## Example:
-
-        ```python
-        from fodantic import formable
-
-        @formable
-        class UserForm(pydantic.BaseModel):
-            name: str
-            age: int
-            tags: list[str]
+            @formable
+            class UserForm(pydantic.BaseModel):
+                name: str
+                age: int
+                tags: list[str]
 
 
-        empty_form = UserForm()
-        valid_form = UserForm({"name": "joe", "age": 33})
-        invalid_form = UserForm({"age": "nan"})
+            empty_form = UserForm()
+            valid_form = UserForm({"name": "joe", "age": 33})
+            invalid_form = UserForm({"age": "nan"})
 
-        print(empty_form.fields)
-        '''
-        {
-           'name': FormField(name='name', annotation=str, is_required=True),
-           'age': FormField(name='age', annotation=int, is_required=True),
-           'tags': FormField(name='tags', annotation=list[str], is_required=True),
-        }
-        '''
+            print(empty_form.fields)
+            '''
+            {
+            'name': FormField(name='name', annotation=str, is_required=True),
+            'age': FormField(name='age', annotation=int, is_required=True),
+            'tags': FormField(name='tags', annotation=list[str], is_required=True),
+            }
+            '''
 
-        print(empty_form.fields["age"].value)
-        #> ''
+            print(empty_form.fields["age"].value)
+            #> ''
 
-        print(valid_form.fields["age"].value)
-        #> 33
+            print(valid_form.fields["age"].value)
+            #> 33
 
-        print(empty_form.save())
-        #> ValueError
+            print(empty_form.save())
+            #> ValueError
 
-        print(valid_form.save())
-        #> {'name': 'joe', 'age': 3, 'tags': []}
+            print(valid_form.save())
+            #> {'name': 'joe', 'age': 3, 'tags': []}
 
-        print(invalid_form.save())
-        #> ValueError
-
-        ```
+            print(invalid_form.save())
+            #> ValueError
+            ```
 
         """
         self.model_cls = model_cls
@@ -256,9 +256,8 @@ def formable(
     Decorator to add a `as_form` class method to a Pydantic model.
     This decorator can be used with or without parenthesis.
 
-    Arguments:
-
-    - orm: Optional class of an ORM model
+    Args:
+        orm: Optional class of an ORM model
 
     """
 

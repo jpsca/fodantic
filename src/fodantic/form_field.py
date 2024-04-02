@@ -126,7 +126,7 @@ class FormField:
     # Private
 
     def _extract_one(self, reqdata: t.Any) -> t.Any:
-        if self.is_bool and self.name not in reqdata:
+        if self.is_bool and (self.name not in reqdata):
             return False
 
         value = reqdata.get(self.name)

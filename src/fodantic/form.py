@@ -9,7 +9,7 @@ from pydantic import BaseModel, ValidationError
 from pydantic_core import ErrorDetails
 
 from .form_field import FormField
-from .wrapper import DataWrapper
+from .wrappers import DataWrapper, ObjectWrapper
 
 
 __all__ = ["formable", "Form"]
@@ -133,7 +133,7 @@ class Form:
             return
 
         req_ = DataWrapper(reqdata)
-        obj_ = DataWrapper(object)
+        obj_ = ObjectWrapper(object)
 
         if object is not None:
             self.object = obj_
@@ -145,7 +145,7 @@ class Form:
             value: t.Any = None
 
             value = field.extract_value(req_)
-            if object and value is None:
+            if object and (value is None):
                 value = obj_.get(model_name)
 
             if value is not None:
@@ -165,7 +165,7 @@ class Form:
                 if field.value is not None
             }
 
-        # print(data)
+        print(data)
         try:
             self.model = self.model_cls(**data)
             self.is_valid = True

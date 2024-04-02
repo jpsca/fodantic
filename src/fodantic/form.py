@@ -22,7 +22,7 @@ class Form:
     is_empty: bool = True
     errors: list[ErrorDetails]
 
-    obj: t.Any = None
+    object: t.Any = None
     model: BaseModel | None = None
 
     def __init__(
@@ -30,7 +30,7 @@ class Form:
         reqdata: t.Any = None,
         *,
         model_cls: t.Type[BaseModel],
-        obj: t.Any = None,
+        object: t.Any = None,
         prefix: str = "",
         orm_cls: t.Any = None,
     ):
@@ -44,7 +44,7 @@ class Form:
             Optional request data used for form submission.
         - model_cls:
             The pydantic model class for data validation.
-        - obj:
+        - object:
             Optional ORM model instance to fill the form and be updated when saving.
         - prefix:
             An optional prefix to prepend to field names (separated with a dot).
@@ -128,15 +128,15 @@ class Form:
             for name, info in self.model_cls.model_fields.items()
         }
 
-        self.is_empty = reqdata is None and obj is None
+        self.is_empty = reqdata is None and object is None
         if self.is_empty:
             return
 
         req_ = DataWrapper(reqdata)
-        obj_ = DataWrapper(obj)
+        obj_ = DataWrapper(object)
 
-        if obj is not None:
-            self.obj = obj_
+        if object is not None:
+            self.object = obj_
 
         data: dict[str, t.Any] = {}
 
@@ -145,7 +145,7 @@ class Form:
             value: t.Any = None
 
             value = field.extract_value(req_)
-            if obj and value is None:
+            if object and value is None:
                 value = obj_.get(model_name)
 
             if value is not None:
@@ -190,8 +190,8 @@ class Form:
 
         data = self.model.model_dump()
 
-        if self.obj is not None:
-            return self.obj.update(data)
+        if self.object is not None:
+            return self.object.update(data)
 
         if self.orm_cls:
             return self.orm_cls(**data)
@@ -224,7 +224,7 @@ class FormableBaseModel(BaseModel):
         cls,
         reqdata: t.Any = None,
         *,
-        obj: t.Any = None,
+        object: t.Any = None,
         prefix: str = "",
     ) -> "Form": ...
 
@@ -263,10 +263,10 @@ def formable(
             cls,
             reqdata: t.Any = None,
             *,
-            obj: t.Any = None,
+            object: t.Any = None,
             prefix: str = "",
         ) -> Form:
-            return Form(reqdata, obj=obj, prefix=prefix, model_cls=cls, orm_cls=orm)
+            return Form(reqdata, object=object, prefix=prefix, model_cls=cls, orm_cls=orm)
 
         setattr(model_cls, "as_form", classmethod(as_form))  # noqa
         model_cls = t.cast(FBM, model_cls)

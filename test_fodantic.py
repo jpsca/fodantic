@@ -139,14 +139,14 @@ def test_prefix_with_default():
     assert AGE_TEST_VALUE == form.fields["age"].value
 
 
-def test_obj_data():
+def test_object_data():
     class User:
         name = "jon doe"
         age = 25
         tags = ["meh", "whatever"]
 
     user = User()
-    form = UserModel.as_form({}, obj=user)
+    form = UserModel.as_form({}, object=user)
 
     assert form.is_valid
     assert not form.errors
@@ -170,7 +170,7 @@ def test_only_validate_with_reqdata():
         tags = []
 
     user = User()
-    form = UserModel.as_form(obj=user)
+    form = UserModel.as_form(object=user)
 
     assert not form.is_valid
     assert not form.errors
@@ -188,7 +188,7 @@ def test_only_validate_with_reqdata():
         form.save()
 
 
-def test_obj_updated():
+def test_object_updated():
     class User:
         name = "original"
         age = 25
@@ -196,7 +196,7 @@ def test_obj_updated():
     reqdata = {"name": "updated"}
     user = User()
 
-    form = UserModel.as_form(reqdata, obj=user)
+    form = UserModel.as_form(reqdata, object=user)
 
     assert form.is_valid
     assert not form.errors
@@ -211,14 +211,14 @@ def test_obj_updated():
     assert "updated" == user.name
 
 
-def test_dict_obj_data():
+def test_dict_object_data():
     user = {
         "name": "jon doe",
         "age": 25,
         "tags": ["meh", "whatever"],
     }
 
-    form = UserModel.as_form({}, obj=user)
+    form = UserModel.as_form({}, object=user)
 
     assert form.is_valid
     assert not form.errors
@@ -235,11 +235,11 @@ def test_dict_obj_data():
     assert user == form.save()
 
 
-def test_dict_obj_updated():
+def test_dict_object_updated():
     user = {"name": "original", "age": 25}
     reqdata = {"name": "updated"}
 
-    form = UserModel.as_form(reqdata, obj=user)
+    form = UserModel.as_form(reqdata, object=user)
 
     assert form.is_valid
     assert not form.errors
@@ -296,6 +296,6 @@ def test_checkbox_empty_override_default():
     assert form.fields["checkbox"].value is False
     assert {"checkbox": False} == form.save()
 
-    form = MyModel.as_form({}, obj={"checkbox": True})
+    form = MyModel.as_form({}, object={"checkbox": True})
     assert form.fields["checkbox"].value is False
     assert {"checkbox": False} == form.save()

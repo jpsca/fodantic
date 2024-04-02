@@ -24,7 +24,7 @@ class UserModel(BaseModel):
 request_data = Multidict(('name', 'John Doe'), ('friends', '2'), ('friends', '3')}
 
 # The magic
-form = UserModel.as_form(request_data, obj=None)
+form = UserModel.as_form(request_data, object=None)
 
 print(form)
 #> UserModel.as_form(name='John Doe', friends=[2, 3], active=False)
@@ -32,7 +32,7 @@ print(form.fields["name"].value)
 #> John Doe
 print(form.fields["name"].error)
 #> None
-print(form.save())  # Can also update the `obj` passed as an argument
+print(form.save())  # Can also update the `object` passed as an argument
 #> {'name': 'John Doe', 'friends': [2, 3], 'active': False}
 
 ```

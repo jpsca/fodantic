@@ -37,7 +37,6 @@ print(form.save())  # Can also update the `object` passed as an argument
 
 ```
 
-
 ## Installation
 
   pip install fodantic
@@ -46,3 +45,21 @@ print(form.save())  # Can also update the `object` passed as an argument
 
 - Python 3.10+
 - Pydantic 2.*
+
+
+## Documentation
+
+### List fields
+
+Fields defined as of type list, tuple, or a derivated type, will be marked as expecting multiple values. A `<select multiple>` and a group of checkboxes charing the same name (but different values) are the most common examples of how these fields look on a form. Fodantic will use the `getall`(*) method on the request data to get a list of all the values under the same name.
+
+(*) Also called `getlist` in many web frameworks.
+
+
+### Booleans fields
+
+Boolean fields are treated special because of how browsers handle checkboxes:
+
+- If not checked: the browser doesn't send the field at all, so the missing field will be interpreted as `False`.
+- If checked: It sends the "value" attribute, but this is optional, so it could send an empty string instead. So any value other than None will be interpreted as `True`.
+

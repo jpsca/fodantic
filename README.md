@@ -21,7 +21,16 @@ class UserModel(BaseModel):
     friends: list[int]
     active: bool = True
 
-request_data = Multidict(('name', 'John Doe'), ('friends', '2'), ('friends', '3')}
+# This is just an example.
+# You would use the request POST data of your web framework instead,
+# for example `request_data = request.form` in Flask
+from multidict import MultiDict
+request_data = MultiDict([
+  ("name", "John Doe"),
+  ("friends", "2"),
+  ("friends", "3"),
+])
+
 
 # The magic
 form = UserModel.as_form(request_data, object=None)

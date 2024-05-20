@@ -18,11 +18,22 @@ class DataWrapper:
 
         """
         self.source: t.Any = {} if source is None else source
-        self.get = self._find_get_method()
-        self.getall = self._find_getall_method()
+        self._get_method = self._find_get_method()
+        self._getall_method = self._find_getall_method()
 
     def __contains__(self, __name: str) -> bool:
         return __name in self.source
+
+    def get(self, key, *args, **kwargs):
+        return self._get_method(key, *args, **kwargs)
+
+    def getall(self, key, *args, **kwargs):
+        """This method always returns a list, even if the
+        key doesn't exists."""
+        try:
+            return self._getall_method(key, *args, **kwargs)
+        except KeyError:
+            return []
 
     def _find_get_method(self) -> t.Callable[[str], t.Any]:
         if hasattr(self.source, "get"):

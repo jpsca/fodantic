@@ -21,16 +21,15 @@ class UserModel(BaseModel):
     friends: list[int]
     active: bool = True
 
-# This is just an example.
-# You would use the request POST data of your web framework instead,
-# for example `request_data = request.form` in Flask
+# This is just an example. Here you would use the
+# request POST data of your web framework instead.
+# For example, for Flask: `request_data = request.form`
 from multidict import MultiDict
 request_data = MultiDict([
   ("name", "John Doe"),
   ("friends", "2"),
   ("friends", "3"),
 ])
-
 
 # The magic
 form = UserModel.as_form(request_data, object=None)

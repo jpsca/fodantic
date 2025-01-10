@@ -11,7 +11,7 @@ authors = [
 ]
 license = { "file" = "MIT-LICENSE" }
 readme = "README.md"
-requires-python = ">=3.10"
+requires-python = ">=3.10,<4"
 classifiers = [
     "Development Status :: 4 - Beta",
     "Environment :: Web Environment",
@@ -27,8 +27,11 @@ dependencies = [
   "pydantic >= 2.6.0",
 ]
 
+[project.urls]
+repository = "https://github.com/jpsca/fodantic"
 
-[project.optional-dependencies]
+
+[dependency-groups]
 dev = [
   "pyright",
   "ruff >= 0.2.0",
@@ -38,13 +41,8 @@ test = [
 ]
 
 
-[project.urls]
-repository = "https://github.com/jpsca/fodantic"
-
-
 [tool.setuptools.packages.find]
 where = ["src"]
-
 
 [tool.setuptools.package-data]
 fodantic = [
@@ -54,7 +52,6 @@ fodantic = [
 
 [tool.coverage.run]
 branch = true
-
 
 [tool.coverage.report]
 exclude_lines = [
@@ -66,7 +63,6 @@ exclude_lines = [
     "raise NotImplementedError",
     "if __name__ == .__main__.:"
 ]
-
 
 [tool.coverage.html]
 directory = "covreport"
@@ -114,7 +110,6 @@ exclude = [
 ]
 include = ["*.py"]
 
-
 [tool.ruff.format]
 # Like Black, use double quotes for strings.
 quote-style = "double"
@@ -145,7 +140,6 @@ docstring-code-line-length = "dynamic"
 
 [tool.ruff.lint]
 fixable = ["ALL"]
-
 ignore = [
 	# x is too complex
 	"C901",
@@ -177,9 +171,7 @@ select = [
 	"W",
 ]
 
-
 [tool.ruff.lint.isort]
 known-first-party = ["fodantic"]
-
 # Use two line after imports.
 lines-after-imports = 2

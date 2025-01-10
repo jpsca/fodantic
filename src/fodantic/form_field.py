@@ -66,7 +66,7 @@ class FormField:
 
         annotation_origin = t.get_origin(info.annotation)
         self.is_multiple = annotation_origin in (list, tuple)
-        self.is_bool = info.annotation == bool or annotation_origin == bool
+        self.is_bool = info.annotation is bool or annotation_origin is bool
 
         self.annotation = info.annotation
         self.alias = info.alias

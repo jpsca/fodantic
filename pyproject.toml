@@ -21,6 +21,7 @@ classifiers = [
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
     "Typing :: Typed",
 ]
 dependencies = [
@@ -35,6 +36,7 @@ repository = "https://github.com/jpsca/fodantic"
 dev = [
   "pyright",
   "ruff >= 0.2.0",
+  "tox-uv",
 ]
 test = [
   "pytest",
@@ -85,21 +87,19 @@ addopts = "--doctest-modules"
 legacy_tox_ini = """
 [tox]
 skipsdist = True
-envlist = py310,py311,py312
+envlist = py310,py311,py312,py313,py314
 
 [testenv]
 skip_install = true
 commands =
-    pip install -U uv
-    uv pip install requirements-text.txt
-    pytest -x src/fodantic.py test_fodantic.py
+    pytest -x src/fodantic test_fodantic.py
 """
 
 
 [tool.ruff]
 line-length = 90
 indent-width = 4
-target-version = "py311"
+target-version = "py312"
 
 exclude = [
   ".*",

@@ -4,16 +4,16 @@ install:
 
 .PHONY: test
 test:
-	pytest -x src/ test_fodantic.py
+	uv run pytest -x src tests
 
 .PHONY: lint
 lint:
-	ruff check src/ test_fodantic.py
+	uv run ruff check src tests
 
 .PHONY: coverage
 coverage:
-	pytest --cov-config=pyproject.toml --cov-report html --cov src/ test_fodantic.py
+	uv run pytest --cov-config=pyproject.toml --cov-report html --cov src tests
 
 .PHONY: types
 types:
-	pyright src/ test_fodantic.py
+	uv run pyright src tests

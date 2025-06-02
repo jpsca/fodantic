@@ -9,14 +9,15 @@ from pydantic import BaseModel, ValidationError
 from pydantic_core import ErrorDetails
 
 from .form_field import FormField
-from .wrappers import DataWrapper, ObjectWrapper
+from .parser import parse
+from .wrappers import ObjectWrapper
 
 
 __all__ = ["formable", "Form"]
 
 
 class Form:
-    fields: "dict[str, FormField]"
+    fields: dict[str, FormField]
     prefix: str = ""
     is_valid: bool = False
     is_empty: bool = True
@@ -29,7 +30,7 @@ class Form:
         self,
         reqdata: t.Any = None,
         *,
-        model_cls: t.Type[BaseModel],
+        model_cls: type[BaseModel],
         object: t.Any = None,
         prefix: str = "",
         orm_cls: t.Any = None,
@@ -132,7 +133,7 @@ class Form:
         if self.is_empty:
             return
 
-        wreqdata = DataWrapper(reqdata)
+        parsed_reqdata = parse(reqdata)
         wobject = ObjectWrapper(object)
 
         if object is not None:
@@ -144,7 +145,7 @@ class Form:
             model_name = field.model_name
             value: t.Any = None
 
-            value = field.extract_value(wreqdata)
+            value = field.extract_value(parsed_reqdata)
             if object and (value is None):
                 value = wobject.get(model_name)
 
@@ -156,6 +157,9 @@ class Form:
 
         if reqdata is not None:
             self.validate(data)
+
+    def __getattr__(self, name: str) -> t.Any:
+        return getattr(self.model, name)
 
     def validate(self, data: dict[str, t.Any] | None = None):
         if data is None:
@@ -232,11 +236,11 @@ class FormableBaseModel(BaseModel):
         *,
         object: t.Any = None,
         prefix: str = "",
-    ) -> "Form": ...
+    ) -> Form: ...
 
 
-BM = t.Type[BaseModel]
-FBM = t.Type[FormableBaseModel]
+BM = type[BaseModel]
+FBM = type[FormableBaseModel]
 
 
 @t.overload

@@ -68,7 +68,7 @@ def test_valid_form():
         {
             "name": "joe",
             "age": "20",
-            "tags": "a",
+            "tags[]": "a",
         }
     )
 
@@ -88,6 +88,31 @@ def test_valid_form():
     assert repr(form) == "UserModel.as_form(name='joe', age=20, tags=['a'])"
 
 
+def test_multidict_form():
+    form = UserModel.as_form(
+        {
+            "name": ["joe"],
+            "age": ["20"],
+            "tags[]": ["a", "b"],
+        }
+    )
+
+    assert form.is_valid
+    assert not form.errors
+
+    assert form.fields["name"].value == "joe"
+    assert form.fields["name"].error is None
+
+    assert form.fields["age"].value == "20"
+    assert form.fields["age"].error is None
+
+    assert form.fields["tags"].value == ["a", "b"]
+    assert form.fields["tags"].error is None
+
+    assert form.save() == {"name": "joe", "age": 20, "tags": ["a", "b"]}
+    assert repr(form) == "UserModel.as_form(name='joe', age=20, tags=['a', 'b'])"
+
+
 def test_missing_list_is_empty_list():
     form = UserModel.as_form({"name": "joe"})
 
@@ -102,7 +127,7 @@ def test_missing_list_is_empty_list():
 
 
 def test_default_value():
-    form = UserModel.as_form({"name": "joe", "tags": "a"})
+    form = UserModel.as_form({"name": "joe", "tags[]": "a"})
 
     assert form.is_valid
     assert not form.errors
@@ -111,7 +136,7 @@ def test_default_value():
 
 def test_prefix():
     form = UserModel.as_form(
-        {"u1.name": "joe", "u1.age": "20", "u1.tags": "a"},
+        {"u1.name": "joe", "u1.age": "20", "u1.tags[]": "a"},
         prefix="u1",
     )
 
@@ -132,7 +157,7 @@ def test_prefix():
 
 
 def test_prefix_with_default():
-    form = UserModel.as_form({"u1.name": "joe", "u1.tags": "a"}, prefix="u1")
+    form = UserModel.as_form({"u1.name": "joe", "u1.tags[]": "a"}, prefix="u1")
 
     assert form.is_valid
     assert not form.errors

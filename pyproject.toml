@@ -40,6 +40,7 @@ dev = [
 ]
 test = [
   "pytest",
+  "pytest-cov",
 ]
 
 

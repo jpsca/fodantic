@@ -3,6 +3,7 @@ Fodantic
 Copyright (c) 2024 Juan-Pablo Scaletti
 """
 import typing as t
+from collections.abc import Iterable
 
 from pydantic_core import PydanticUndefined
 
@@ -65,7 +66,7 @@ class FormField:
         self.is_required = info.is_required()
 
         annotation_origin = t.get_origin(info.annotation)
-        self.is_multiple = annotation_origin in (list, tuple)
+        self.is_multiple = annotation_origin in (list, tuple, Iterable)
         self.is_bool = info.annotation is bool or annotation_origin is bool
 
         self.annotation = info.annotation
@@ -108,24 +109,7 @@ class FormField:
             return
         self.value = value
 
-    def extract_value(self, reqdata: t.Any) -> str | bool | None | list[str]:
-        return (
-            self._extract_many(reqdata)
-            if self.is_multiple
-            else self._extract_one(reqdata)
-        )
-
-    def get_default(self) -> t.Any:
-        default = self.default_factory() if self.default_factory else self.default
-        if default == PydanticUndefined:
-            default = None
-        if default is None:
-            default = [] if self.is_multiple else ""
-        return default
-
-    # Private
-
-    def _extract_one(self, reqdata: t.Any) -> t.Any:
+    def extract_value(self, reqdata: t.Any) -> t.Any:
         if self.is_bool and (self.name not in reqdata):
             return False
 
@@ -145,12 +129,10 @@ class FormField:
 
         return extracted
 
-    def _extract_many(self, reqdata: t.Any) -> list[str] | None:
-        if self.name not in reqdata:
-            return None
-        value = reqdata.getall(self.name)
-        alias_value = reqdata.getall(self.alias_name)
-        if self.alias_priority > 1:
-            value, alias_value = alias_value, value
-
-        return alias_value if value == [] else value
+    def get_default(self, **kw) -> t.Any:
+        default = self.default_factory() if self.default_factory else self.default
+        if default == PydanticUndefined:
+            default = None
+        if default is None:
+            default = [] if self.is_multiple else ""
+        return default

@@ -8,7 +8,6 @@ Pydantic-based HTTP forms.
 
 **Fodantic** allow you to quickly wrap your Pydantic models and use them as forms: with support for multiple values, checkboxes, error handling, and integration with your favorite ORM.
 
-
 ## A simple example
 
 ```py
@@ -51,23 +50,122 @@ print(form.save())  # Can also update the `object` passed as an argument
 
 ### Requirements
 
-- Python 3.10+
+- Python > 3.10
 - Pydantic 2.*
 
+## Form Fields Parsing with Nested Notation
 
-## Documentation
+Fodantic supports parsing nested form fields using bracket notation ([]), similar to how Ruby on Rails and PHP handle form data. This allows you to easily create complex nested data structures from flat form submissions.
 
-### List fields
+### Nested Object Notation
 
-Fields defined as of type list, tuple, or a derivated type, will be marked as expecting multiple values. A `<select multiple>` and a group of checkboxes charing the same name (but different values) are the most common examples of how these fields look on a form. Fodantic will use the `getall`(*) method on the request data to get a list of all the values under the same name.
+You can use brackets to define nested objects in your form fields:
 
-(*) Also called `getlist` in many web frameworks.
+```html
+<input name="user[name]" value="Alice">
+<input name="user[email]" value="alice@example.com">
+<input name="user[address][city]" value="New York">
+<input name="user[address][zip]" value="10001">
+```
 
+This will be parsed into a nested structure:
 
-### Booleans fields
+```python
+{
+    "user": {
+        "name": "Alice",
+        "email": "alice@example.com",
+        "address": {
+            "city": "New York",
+            "zip": "10001"
+        }
+    }
+}
+```
+
+### Array Notation
+
+You can create arrays using numeric indexes or empty brackets:
+
+#### Indexed Arrays
+
+```html
+<input name="contacts[0][name]" value="John">
+<input name="contacts[0][phone]" value="555-1234">
+<input name="contacts[1][name]" value="Jane">
+<input name="contacts[1][phone]" value="555-5678">
+```
+
+#### Array Append (Empty Brackets)
+
+```html
+<input name="tags[]" value="important">
+<input name="tags[]" value="urgent">
+<input name="tags[]" value="follow-up">
+```
+
+### Mixed Structures
+
+You can combine these notations to create complex data structures:
+
+```html
+<input name="user[name]" value="Bob">
+<input name="user[skills][]" value="Python">
+<input name="user[skills][]" value="JavaScript">
+<input name="user[projects][0][name]" value="Project A">
+<input name="user[projects][0][status]" value="active">
+<input name="user[projects][1][name]" value="Project B">
+<input name="user[projects][1][status]" value="pending">
+```
+
+This will be parsed into:
+
+```python
+{
+    "user": {
+        "name": "Bob",
+        "skills": ["Python", "JavaScript"],
+        "projects": [
+            {"name": "Project A", "status": "active"},
+            {"name": "Project B", "status": "pending"}
+        ]
+    }
+}
+```
+
+### Usage with Pydantic Models
+
+This nested notation works seamlessly with Pydantic models, allowing you to map complex form structures to nested models:
+
+```python
+from fodantic import formable
+from pydantic import BaseModel
+from typing import List
+
+class Address(BaseModel):
+    city: str
+    zip: str
+
+class Project(BaseModel):
+    name: str
+    status: str
+
+@formable
+class UserModel(BaseModel):
+    name: str
+    skills: List[str] = []
+    address: Address
+    projects: List[Project] = []
+
+# Your form data with nested structure
+form = UserModel.as_form(request_data)
+```
+
+The parser handles all the complexity of transforming the flat form structure into the nested objects your models expect.
+
+## Booleans fields
 
 Boolean fields are treated special because of how browsers handle checkboxes:
 
 - If not checked: the browser doesn't send the field at all, so the missing field will be interpreted as `False`.
 - If checked: It sends the "value" attribute, but this is optional, so it could send an empty string instead. So any value other than None will be interpreted as `True`.
-

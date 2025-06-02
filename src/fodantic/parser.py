@@ -54,20 +54,20 @@ def insert(parsed_key: list[str | int | None], value: t.Any, target: dict[str, t
                 ref.append(None)
 
             if is_last:
-                ref[part] = value
+                ref[part] = value  # type: ignore
             else:
-                if ref[part] is None:
-                    ref[part] = {} if isinstance(next_part, str) else []
-                ref = ref[part]
+                if ref[part] is None:  # type: ignore
+                    ref[part] = {} if isinstance(next_part, str) else []  # type: ignore
+                ref = ref[part]  # type: ignore
 
         else:  # dict key
             if is_last:
                 assert isinstance(ref, dict)
                 ref[part] = value
             else:
-                if part not in ref or not isinstance(ref[part], (dict, list)):
-                    ref[part] = {} if isinstance(next_part, str) else []
-                ref = ref[part]
+                if part not in ref or not isinstance(ref[part], (dict, list)):  # type: ignore
+                    ref[part] = {} if isinstance(next_part, str) else []  # type: ignore
+                ref = ref[part]  # type: ignore
 
 
 def parse(reqdata: dict[str, t.Any]) -> dict[str, t.Any]:

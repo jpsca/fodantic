@@ -4,7 +4,7 @@ requires = ["setuptools"]
 
 [project]
 name = "fodantic"
-version = "0.0.5"
+version = "0.1"
 description = "Pydantic-based HTTP forms"
 authors = [
   {name = "Juan-Pablo Scaletti", email = "juanpablo@jpscaletti.com"},
@@ -87,13 +87,19 @@ addopts = "--doctest-modules"
 [tool.tox]
 legacy_tox_ini = """
 [tox]
-skipsdist = True
-envlist = py310,py311,py312,py313,py314
+env_list =
+    3.10
+    3.11
+    3.12
+    3.13
 
 [testenv]
-skip_install = true
+runner = uv-venv-lock-runner
+dependency_groups =
+    dev
+    test
 commands =
-    pytest -x src/fodantic test_fodantic.py
+    pytest -x src/fodantic tests
 """
 
 

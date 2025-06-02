@@ -130,7 +130,7 @@ class FormField:
         return extracted
 
     def get_default(self, **kw) -> t.Any:
-        default = self.default_factory() if self.default_factory else self.default
+        default = self.default_factory() if self.default_factory else self.default  # type: ignore
         if default == PydanticUndefined:
             default = None
         if default is None:

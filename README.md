@@ -1,6 +1,6 @@
 # Fodantic
 
-<img align="right" height="200" src="https://github.com/jpsca/fodantic/blob/1620ae934be26ce1ef2a57aeebfb820e52461305/fodantic.png">
+<img align="right" height="200" src="https://raw.githubusercontent.com/jpsca/fodantic/refs/heads/main/fodantic.png">
 
 Pydantic-based HTTP forms.
 
@@ -55,7 +55,8 @@ print(form.save())  # Can also update the `object` passed as an argument
 
 ## Form Fields Parsing with Nested Notation
 
-Fodantic supports parsing nested form fields using bracket notation ([]), similar to how Ruby on Rails and PHP handle form data. This allows you to easily create complex nested data structures from flat form submissions.
+Fodantic supports parsing nested form fields using bracket (`[]`) notation -- similar to how Ruby on Rails and PHP handle form data.
+This allows you to easily create complex nested data structures from flat form submissions.
 
 ### Nested Object Notation
 
@@ -96,6 +97,17 @@ You can create arrays using numeric indexes or empty brackets:
 <input name="contacts[1][phone]" value="555-5678">
 ```
 
+This will be parsed into:
+
+```python
+{
+  "contacts": [
+    {"name": "John", "phone": "555-1234"},
+    {"name": "Jane", "phone": "555-5678"},
+  ]
+}
+```
+
 #### Array Append (Empty Brackets)
 
 ```html
@@ -104,7 +116,15 @@ You can create arrays using numeric indexes or empty brackets:
 <input name="tags[]" value="follow-up">
 ```
 
-### Mixed Structures
+This will be parsed into:
+
+```python
+{
+  "tags": ["important", "urgent", "follow-up"]
+}
+```
+
+#### Mixed Structures
 
 You can combine these notations to create complex data structures:
 
